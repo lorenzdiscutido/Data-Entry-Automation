@@ -18,6 +18,7 @@ REFERENCE_DATA = [
     ["CC+", "Major Concrete Crack", "Act of God or Wear and Tear", "Often indicate structural stress or abnormal movement; may also reflect long-term degradation in structural load paths. Soil movements blow causing structure movements.", "Perform epoxy injection."],
     ["C+", "Major Concrete Crack", "Act of God or Wear and Tear", "Often indicate structural stress or abnormal movement; may also reflect long-term degradation in structural load paths. Soil movements blow causing structure movements.", "Perform epoxy injection."],
     ["BH", "Dented Surface or Bugholes", "Workmanship", "Result from improper concrete casting, lack of consolidation, or poor formwork. Appear early and are usually non-structural.", "Apply repair mortar with concrete epoxy (A&B). (Repainting upon building admin decision)"],
+    ["US", "Dented Surface or Bugholes", "Workmanship", "Result from improper concrete casting, lack of consolidation, or poor formwork. Appear early and are usually non-structural.", "Apply repair mortar with concrete epoxy (A&B). (Repainting upon building admin decision)"],
     ["DP", "Discolored Paint", "Wear and Tear", "Fades or stains over time due to sun exposure, moisture, and pollution. A predictable result of long-term exposure.", "Retouch paint; ensure proper surface prep."],
     ["FP", "Flaky Paint", "Wear and Tear", "Lapsed warranty; degrades due to age, UV, and temperature shifts. Failures are common after several years of exposure.", "Remove loose paint, prime, and repaint."],
     ["BP", "Bubbly Paint", "Wear and Tear", "Lapsed warranty; degrades due to age, UV, and temperature shifts. Failures are common after several years of exposure.", "Remove bubbles, dry surface, prime, and repaint."],
@@ -26,3 +27,12 @@ REFERENCE_DATA = [
     ["MS", "Missing Sealant", "Workmanship", "Indicates that sealant was never applied during installation. This reflects an omission in workmanship or quality control at the time of construction.", "Clean joint and install backer rod and applynew sealant."],
     ["BG", "Broken Glass (BG)", "Unclassified (Circumstantial)", "Typically the result of impact, high wind pressure, or spontaneous breakage due to thermal stress. Often sudden and isolated.", "Replace glass and reseal edges."]
 ]
+
+# STRICT MATERIAL VALIDATION DICTIONARY
+MATERIAL_RULES = {
+    "Concrete": ["CC+", "CC-", "C+", "C-", "BH", "US"],
+    "Paint": ["DP", "FP", "BP", "B"], 
+    "Gasket": ["DG"],
+    "Sealant": ["DS", "MS"],
+    "Broken Glass": ["BG"]
+}

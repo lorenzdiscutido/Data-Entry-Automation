@@ -8,7 +8,7 @@ from openpyxl.styles import Font, Alignment, PatternFill
 from watchdog.observers.polling import PollingObserver 
 from watchdog.events import FileSystemEventHandler
 
-from config import INCOMING_FOLDER, PROCESSED_LOG, REFERENCE_DATA
+from config import INCOMING_FOLDER, PROCESSED_LOG, REFERENCE_DATA, MATERIAL_RULES
 from image_utils import load_image, prepare_excel_image
 from gemini_client import get_raw_response, parse_and_clean_json
 
@@ -126,12 +126,12 @@ def process_single_image(filepath):
 
                 start_row = ws.max_row + 1
                 
-                # Memorize all valid defect codes from the Reference Data (e.g., 'BP', 'CC+', 'DS')
                 VALID_CODES = {row[0] for row in REFERENCE_DATA[1:]}
 
                 rows_data = []
                 for mat in ["Sealant", "Concrete", "Paint", "Gasket"]:
-                    rows_data.append((mat, "", True, False)) 
+                    # Pass 'mat' down into the tuple so we know which material block we are inside
+                    rows_data.append((mat, "", True, False, mat)) 
                     
                     dmg_list = parsed_data.get(f"{mat} Damage", [])
                     dim_list = parsed_data.get(f"{mat} Dimension", [])
@@ -139,7 +139,6 @@ def process_single_image(filepath):
                     expanded_dmg = []
                     expanded_dim = []
                     
-                    # Smart Split Logic
                     for i in range(max(len(dmg_list), len(dim_list))):
                         dmg_str = dmg_list[i] if i < len(dmg_list) else ""
                         dim_str = dim_list[i] if i < len(dim_list) else ""
@@ -147,13 +146,11 @@ def process_single_image(filepath):
                         tokens = str(dmg_str).split()
                         found_codes = [t for t in tokens if t in VALID_CODES]
                         
-                        # If we find multiple valid codes in one cell (e.g., "BP FP")
                         if len(found_codes) > 1:
                             for code in found_codes:
                                 expanded_dmg.append(code)
-                                expanded_dim.append(dim_str) # Duplicates the dimension for each defect
+                                expanded_dim.append(dim_str) 
                         else:
-                            # Keep it intact (e.g., "DS C-C" or regular single codes)
                             expanded_dmg.append(dmg_str)
                             expanded_dim.append(dim_str)
                     
@@ -162,7 +159,7 @@ def process_single_image(filepath):
                     for i in range(max_len):
                         dmg_val = expanded_dmg[i] if i < len(expanded_dmg) else ""
                         dim_val = expanded_dim[i] if i < len(expanded_dim) else ""
-                        rows_data.append((dmg_val, dim_val, False, True)) 
+                        rows_data.append((dmg_val, dim_val, False, True, mat)) 
 
                 total_rows = len(rows_data)
 
@@ -172,7 +169,7 @@ def process_single_image(filepath):
                     if total_rows > 1:
                         ws.merge_cells(start_row=start_row, start_column=i+1, end_row=start_row + total_rows - 1, end_column=i+1)
 
-                for i, (g_val, h_val, is_title, is_data) in enumerate(rows_data):
+                for i, (g_val, h_val, is_title, is_data, current_mat) in enumerate(rows_data):
                     r = start_row + i
                     cell_g = ws.cell(row=r, column=7)
                     cell_h = ws.cell(row=r, column=8)
@@ -180,16 +177,29 @@ def process_single_image(filepath):
                     cell_g.value = g_val
                     cell_h.value = h_val
 
+                    # Cross-reference the extracted code with the specific material rules
+                    is_invalid = False
+                    if is_data and g_val:
+                        base_code = str(g_val).split()[0]
+                        allowed_codes = MATERIAL_RULES.get(current_mat, [])
+                        if base_code not in allowed_codes:
+                            is_invalid = True
+
                     if is_title:
                         ws.merge_cells(start_row=r, start_column=7, end_row=r, end_column=8)
                         cell_g.font = Font(bold=True)
                     elif is_data:
                         lookup_val = f'LEFT($G{r}, FIND(" ", $G{r}&" ") - 1)'
                         
-                        ws.cell(row=r, column=10).value = f'=IFERROR(VLOOKUP({lookup_val}, \'Reference Data\'!$A$2:$E$14, 3, FALSE), "")'
-                        ws.cell(row=r, column=11).value = f'=IFERROR(VLOOKUP({lookup_val}, \'Reference Data\'!$A$2:$E$14, 4, FALSE), "")'
-                        ws.cell(row=r, column=12).value = f'=IFERROR(VLOOKUP({lookup_val}, \'Reference Data\'!$A$2:$E$14, 5, FALSE), "")'
-                        ws.cell(row=r, column=13).value = f'=IFERROR(VLOOKUP({lookup_val}, \'Reference Data\'!$A$2:$E$14, 2, FALSE), "")'
+                        ws.cell(row=r, column=10).value = f'=IFERROR(VLOOKUP({lookup_val}, \'Reference Data\'!$A$2:$E$15, 3, FALSE), "")'
+                        ws.cell(row=r, column=11).value = f'=IFERROR(VLOOKUP({lookup_val}, \'Reference Data\'!$A$2:$E$15, 4, FALSE), "")'
+                        ws.cell(row=r, column=12).value = f'=IFERROR(VLOOKUP({lookup_val}, \'Reference Data\'!$A$2:$E$15, 5, FALSE), "")'
+                        ws.cell(row=r, column=13).value = f'=IFERROR(VLOOKUP({lookup_val}, \'Reference Data\'!$A$2:$E$15, 2, FALSE), "")'
+
+                        # If flagged as invalid, turn the font red for Columns G through M on this specific row
+                        if is_invalid:
+                            for col_idx in range(7, 14):
+                                ws.cell(row=r, column=col_idx).font = Font(color="FF0000")
 
                 photo_col_letter = 'I' 
                 excel_img = prepare_excel_image(filepath, total_rows)
@@ -204,6 +214,7 @@ def process_single_image(filepath):
                     ws.row_dimensions[r].height = base_height
                     for c in range(1, 14):
                         ws.cell(row=r, column=c).alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+                        
                 ws.column_dimensions[photo_col_letter].width = 25
 
                 wb.save(output_xlsx_path)
@@ -296,7 +307,7 @@ if __name__ == "__main__":
     else:
         print("========================================")
         print(" WHITEBOARD DATA EXTRACTION SCRIPT")
-        print(" (Dynamic Split Update)")
+        print(" (Material Validation Update)")
         print("========================================")
         print("1: Run Batch Process Only")
         print("2: Start Watchdog Only (Live Monitor)")
@@ -313,4 +324,4 @@ if __name__ == "__main__":
             run_batch_processor()
             run_watchdog()
         else:
-            print("Invalid choice. Exiting script.") 
+            print("Invalid choice. Exiting script.")
