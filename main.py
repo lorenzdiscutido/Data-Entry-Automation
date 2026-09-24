@@ -8,26 +8,9 @@ from openpyxl.styles import Font, Alignment, PatternFill
 from watchdog.observers.polling import PollingObserver 
 from watchdog.events import FileSystemEventHandler
 
-from config import INCOMING_FOLDER, PROCESSED_LOG
+from config import INCOMING_FOLDER, PROCESSED_LOG, REFERENCE_DATA
 from image_utils import load_image, prepare_excel_image
 from gemini_client import get_raw_response, parse_and_clean_json
-
-# Added C+ and C- variations to accommodate different worker handwriting styles
-REFERENCE_DATA = [
-    ["Defect Code", "Defect Type", "Likely Cause(s)", "Justification", "Recommended Repair"],
-    ["CC-", "Minor Concrete Crack", "Act of God or Wear and Tear", "Typically form due to drying shrinkage or building movement. Can be exacerbated by environmental stress or thermal cycling. Occurences beyond human control", "Apply epoxy mortar."],
-    ["C-", "Minor Concrete Crack", "Act of God or Wear and Tear", "Typically form due to drying shrinkage or building movement. Can be exacerbated by environmental stress or thermal cycling. Occurences beyond human control", "Apply epoxy mortar."],
-    ["CC+", "Major Concrete Crack", "Act of God or Wear and Tear", "Often indicate structural stress or abnormal movement; may also reflect long-term degradation in structural load paths. Soil movements blow causing structure movements.", "Perform epoxy injection."],
-    ["C+", "Major Concrete Crack", "Act of God or Wear and Tear", "Often indicate structural stress or abnormal movement; may also reflect long-term degradation in structural load paths. Soil movements blow causing structure movements.", "Perform epoxy injection."],
-    ["BH", "Dented Surface or Bugholes", "Workmanship", "Result from improper concrete casting, lack of consolidation, or poor formwork. Appear early and are usually non-structural.", "Apply repair mortar with concrete epoxy (A&B). (Repainting upon building admin decision)"],
-    ["DP", "Discolored Paint", "Wear and Tear", "Fades or stains over time due to sun exposure, moisture, and pollution. A predictable result of long-term exposure.", "Retouch paint; ensure proper surface prep."],
-    ["FP", "Flaky Paint", "Wear and Tear", "Lapsed warranty; degrades due to age, UV, and temperature shifts. Failures are common after several years of exposure.", "Remove loose paint, prime, and repaint."],
-    ["BP", "Bubbly Paint", "Wear and Tear", "Lapsed warranty; degrades due to age, UV, and temperature shifts. Failures are common after several years of exposure.", "Remove bubbles, dry surface, prime, and repaint."],
-    ["DG", "Damaged Gasket", "Wear and Tear", "Gaskets degrade due to age, UV, and temperature shifts. Failures are common after several years of exposure", "Remove gasket and reseal."],
-    ["DS", "Damaged Sealant", "Wear and Tear", "Lapsed warranty; Cracking or tearing due to joint movement, UV aging, or thermal cycles. Material failure over time is expected even with proper application.", "Remove existing sealant, clean joint, install backer rod and apply new sealant."],
-    ["MS", "Missing Sealant", "Workmanship", "Indicates that sealant was never applied during installation. This reflects an omission in workmanship or quality control at the time of construction.", "Clean joint and install backer rod and applynew sealant."],
-    ["BG", "Broken Glass (BG)", "Unclassified (Circumstantial)", "Typically the result of impact, high wind pressure, or spontaneous breakage due to thermal stress. Often sudden and isolated.", "Replace glass and reseal edges."]
-]
 
 last_processed_time = time.time()
 is_processing = False
