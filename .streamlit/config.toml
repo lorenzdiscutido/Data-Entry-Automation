@@ -1,0 +1,18 @@
+[theme]
+# Forces the app to always use Dark Mode
+base = "dark"
+
+# The accent orange from the 'V' in the logo for buttons and loading bars
+primaryColor = "#D54527"
+
+# The standard white background
+backgroundColor = "#FFFFFF"
+
+# A subtle light gray for upload boxes and sidebars
+secondaryBackgroundColor = "#F0F2F6"
+
+# The dark navy blue from the logo for all app text
+textColor = "#1D375B"
+
+# The matching font family
+font = "sans serif"
